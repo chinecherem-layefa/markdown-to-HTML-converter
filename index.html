@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Markdown-to-HTML converter</title>
+    <!-- fonts awesome links -->
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css"
+      integrity="sha512-2SwdPD6INVrV/lHTZbO2nodKhrnDdJK9/kg2XD1r9uGqPo1cUbujc+IYdlYdEErWNu69gVcYgdxlmVmzTWnetw=="
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <article class="container">
+      <h2 class="formatted top-heading">Markdown-to-HTML converter</h2>
+      <section class="textarea_cancel">
+        <textarea
+          name="text"
+          class="input-markdown blue-border"
+          id="inputMarkdown"
+          placeholder="Type in markdown"
+        ></textarea>
+        <button id="cancelMarkdown" class="cancel-markdown">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </section>
+      <section class="display_convert">
+        <section class="display-html">
+          <label for="showHtml" class="formatted">HTML output</label>
+          <textarea
+            readonly
+            name="text"
+            id="showHtml"
+            class="blue-border"
+            placeholder="HTML will be displayed here..."
+          ></textarea>
+        </section>
+        <section class="convert-button">
+          <button id="convert" class="convert">
+            <i class="fa-solid fa-plus"></i>
+          </button>
+          <span class="tooltip-text">convert</span>
+        </section>
+      </section>
+    </article>
+    <script type="module" src="convert.js"></script>
+  </body>
+</html>
