@@ -7,12 +7,16 @@
 body {
   background-color: rgba(0, 0, 0, 0.75);
   min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
   padding: 20px;
 }
 
 :root {
-  --smooth-blue: rgb(0, 162, 255);
+  --smooth-blue: #00a2ff;
   --text-font-size: 1.5rem;
+  --smaller-font-size: 1rem;
   --warning-red: rgba(255, 0, 0, 0.761);
   --light-red-bg: rgb(249, 245, 245);
 }
@@ -113,22 +117,6 @@ body {
   transition: all 0.3s ease;
 }
 
-.tooltip-text {
-  color: var(--smooth-blue);
-  background-color: #333333;
-  padding: 3px;
-  letter-spacing: 3px;
-  visibility: hidden;
-  opacity: 0;
-  text-transform: uppercase;
-}
-
-.convert:hover,
-.convert:active .tooltip-text {
-  visibility: visible;
-  opacity: 1;
-}
-
 .input-markdown.error {
   border: 2px solid var(--warning-red);
   background-color: var(--light-red-bg);
@@ -156,5 +144,20 @@ body {
     width: fit-content;
     margin: auto;
     padding: 10px;
+  }
+
+  .display-html textarea {
+    font-size: var(--text-font-size);
+    padding: 20px;
+    width: 100%;
+  }
+
+  textarea {
+    font-size: var(--smaller-font-size);
+  }
+
+  .container {
+    width: 900px;
+    margin: 0 auto;
   }
 }

@@ -1,175 +1,143 @@
-//****** STAGE 1 *****//
-// The main orchestrator.
-// This is the public API, the only function the outside world calls. It has a single responsibility, its only job is to coordinate the pipeline stages in correct, systematic way.
-
 function markdownToHTML(markdown) {
-  // Input validation - defensive programming.
+  // Error processing and input validation...
   if (typeof markdown !== "string") {
-    throw new TypeError("Input must be a string!"); // this keeps our detailed design architecture as smart, specific and clear and posssible.
+    throw new TypeError("Input must be a string");
   }
 
-  //***** STAGE 2 *****// split the markdown into lines using the newlines as delimiters.
+  // Make ready the input for parsing;
   const lines = markdown.split(/\r?\n/);
 
-  //***** STAGE 3 *****// This will hold our HTML as we build it.
-  const output = [];
+  // Make ready the output that will be getting the parsed blocks
+  const output = []; // array push over string concatenation. O(n) over O(n^2)
 
-  // STATE MACHINE variables;
-  let inCodeBlock = false; // Are we inside ``` code fences?
-  let inList = false; // Are we inside a <ul> or <ol>?
-  let listStack = []; // Tracking nested lists (only needed for advanced implementation)
-  let paragraphBuffer = []; // collect lines for a paragraph
+  // State machine variables
+  let paragraphBuffer = [];
   let currentListType = null;
+  let inCodeBlock = false;
 
+  // Now, taking each line iteratively, let's parse each one accordingly; code blocks have the most priority.
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
     const trimmedLine = line.trim();
 
+    // Blank lines that seperate blocks...
     if (trimmedLine === "") {
-      flushParagraph(paragraphBuffer);
-      flushList(currentListType);
+      flushParagraph();
+      flushList();
       continue;
     }
 
+    // Code blocks
     if (trimmedLine.startsWith("```")) {
-      // using trimmedLine because everything a line starts with is a string.
       if (!inCodeBlock) {
-        // we are automatically in a new code block.
-        flushParagraph(paragraphBuffer);
-        flushList(currentListType);
-        output.push("<pre><code>");
+        flushParagraph();
         inCodeBlock = true;
+        output.push("<pre><code>\n");
       } else {
-        // we are now exiting a code block because we have been in a code block before.
-        output.push("</code></pre>\n");
         inCodeBlock = false;
+        output.push("</code><pre>\n");
       }
       continue;
     }
-
-    // if we ARE inside a code block, just sanitize the line.
     if (inCodeBlock) {
-      output.push(escapeHtml(line) + "\n");
+      output.push(escapeHTML(line) + "\n");
       continue;
     }
 
-    // ----- HANDLE HEADINGS (BLOCK LEVEL)
-    // Headings start with 1-6 # characters followed by a space before the content.
-    const headingMatch = trimmedLine.match(/^(#{1,6})\s+(.*)$/); // returns an array, headingMatch = ["# Markdown to HTML converter", "#", "Markdown to HTML converter" ]
+    // Headings (/^(#{1,6})\s+(.*)$/)
+    const headingMatch = trimmedLine.match(/^(#{1,6})\s+(.*)$/);
     if (headingMatch) {
-      flushParagraph(paragraphBuffer);
-      flushList(currentListType);
-      const level = headingMatch[1].length;
-      const content = parseInLine(headingMatch[2]);
-      output.push(`<h${level}>${content}</h${level}>\n`);
+      const headingLevel = headingMatch[1].length;
+      const headingContent = parseInLine(headingMatch[2]);
+      output.push(`<h${headingLevel}>${headingContent}</h${headingLevel}>\n`);
       continue;
     }
 
-    // ****** HANDLE LISTS ***** //
+    // Lists (/^([-*+])\s+(.*)$/)  (/^(\d+)\.\s+(.*)$/)
     const unorderedMatch = trimmedLine.match(/^([-*+])\s+(.*)$/);
     const orderedMatch = trimmedLine.match(/^(\d+)\.\s+(.*)$/);
-
     if (unorderedMatch || orderedMatch) {
-      if (!inList) {
+      if (!currentListType) {
+        flushParagraph();
         currentListType = unorderedMatch ? "ul" : "ol";
-        flushParagraph(paragraphBuffer);
         output.push(`<${currentListType}>\n`);
-        inList = true;
       }
 
-      const content = unorderedMatch
-        ? parseInLine(unorderedMatch[2])
-        : parseInLine(orderedMatch[2]);
-      output.push(`<li>${content}</li>\n`);
+      const listContent = unorderedMatch ? unorderedMatch[2] : orderedMatch[2];
+      output.push(`<li>${parseInLine(listContent)}</li>\n`);
       continue;
     }
 
-    // ------ HANDLE HORIZONTAL RULES ------ //
-    // three or more -, * or _ at the start of a line indicates an horizontal rule.
+    // Horizontal rule /^[-*_]{3,}$/
     if (trimmedLine.match(/^[-*_]{3,}$/)) {
-      flushParagraph(paragraphBuffer);
-      flushList(currentListType);
-      output.push("<hr/>\n");
-      continue; // move to the next iteration.
+      output.push(`<hr>\n`);
+      continue;
     }
 
-    paragraphBuffer.push(line);
+    paragraphBuffer.push(parseInLine(line));
   }
-  // Now, our lines are done and we are at the end of the file. So flush every remaining content.
-  flushParagraph(paragraphBuffer);
-  flushList(currentListType);
+  flushList();
+  flushParagraph();
 
-  function flushParagraph(buffer) {
-    if (buffer.length === 0) return;
-    const paragraphText = buffer.join(" ").trim();
-    if (paragraphText.length > 0) {
-      output.push(`<p>${parseInLine(paragraphText)}</p>\n`);
-    }
-    buffer.length = 0;
-  }
-
-  function flushList(currentListType) {
+  function flushList() {
     if (currentListType) {
-      output.push(`</${currentListType}>`);
+      output.push(`</${currentListType}>\n`);
       currentListType = null;
     }
   }
 
+  function flushParagraph() {
+    if (paragraphBuffer === 0) return;
+    const aParagraph = paragraphBuffer.join(" ").trim();
+    if (aParagraph.length > 0) {
+      output.push(`<p>${aParagraph}</p>\n`);
+    }
+    paragraphBuffer.length = 0;
+  }
+
+  //   return output.join("").replace(/\n{3,}/g, "\n\n");
   return output.join("").replace(/\n{3,}/g, "\n\n");
 }
 
+// These are functions for parsing in line elements and entities.
 function parseInLine(text) {
-  let result = escapeHtml(text);
-  //Pattern 1: Strong/Bold (MOST SPECIFIC FIRST);
-  // **text** or __text__
-  result = result.replace(/\*\*(.*?)\*\*/g, `<strong>$1</strong>`);
-  result = result.replace(/\__(.*?)\__/g, `<strong>$1</strong>`);
-  result = result.replace(/(?<!\w)\*(.*?)\*(?!\w)/g, `<em>$1</em>`);
-  result = result.replace(/(?<!\w)\_(.*?)\_(?!\w)/g, `<em>$1</em>`);
-  // Pattern 3: Inline code.
-  // `code`
-  result = result.replace(/\`(.*?)\`/g, `<code>$1</code>`);
+  let result = escapeHTML(text);
 
-  // Pattern 4: Links.
-  // [text](url) or [text](url "title")
+  // Images are of the highest priority ![link](url)
+  result = result.replace(/!\[(.*?)\]\((.*?)\)/g, `<img src="$2" alt="$1">\n`);
+  // Then links [link](url) or [link](url "title")  /\[(.*?)\]\((.*?)(?:\s+"(.*?)")?\)/g,
   result = result.replace(
     /\[(.*?)\]\((.*?)(?:\s+"(.*?)")?\)/g,
-    function (match, text, url, title) {
-      let titleAttr = "";
+    function (match, link, url, title) {
+      let titleContent = "";
       if (title) {
-        titleAttr = `title="${escapeHtml(title)}"`;
+        titleContent = `title="${title}"`;
       }
-      return `<a href="${escapeHtml(url)}"${titleAttr}>${text}</a>`; // wow, so some anchor elements have title attached to them.
+      return `<a href="${url}"${titleContent}>${link}</a>`;
     },
   );
+  // Then strong, italic text...
+  result = result.replace(/\*\*(.*?)(?<!\w)\*\*/g, `<strong>$1</strong>`);
+  result = result.replace(/\*\*(.*?)\*\*/g, `<strong>$1</strong>`);
+  result = result.replace(/\*(.*?)\*/g, `<em>$1</em>`);
+  result = result.replace(/\_\_(.*?)\_\_/g, `<strong>$1</strong>`);
+  result = result.replace(/\_(.*?)\_/g, `<em>$1</em>`);
 
-  // Pattern 5: Images;
-  // ![alt](url)
-  result = result.replace(/!\[(.*?)\]\((.*?)\)/g, `<img src="$2" alt="$1">`);
+  // Then inline code blocks
+  result = result.replace(/\`(.*?)\`/g, `<code>$1</code>`);
+
   return result;
 }
 
-function escapeHtml(text) {
-  // Create a map or dictionary of all (5) dangerous characters to their safe HTML entities
+function escapeHTML(text) {
   const htmlEscapes = {
-    "&": "&amp;",
+    "&": "&mp;",
     "<": "&lt;",
     ">": "&gt;",
-    '"': "&quot;",
     "'": "&#39;",
+    '"': "&quot;",
   };
   return text.replace(/[&<>"']/g, (match) => htmlEscapes[match]);
 }
 
 export { markdownToHTML };
-
-// ```js
-// console.log(15);
-// ```
-
-// This is expected to wrap in a paragraph tag.
-
-// - One item list
-
-// - One item
-// - Two items
