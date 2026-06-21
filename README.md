@@ -2,6 +2,8 @@
 
 **_Purpose:_** To take plain markdown that humans can write easily given the domain rules, and convert to HTML, that can be easily rendered by browsers.
 
+![project demo](./screenshot.jpg)
+
 **_Program Organization_**: Regex-based pipeline parser with minimal state machine, designed for simplicity and learning. It has known limitations in nesting which its refactored phase will later address using a stack. Overall, it works for 80% use cases.
 
 ## Three levels of software design...
