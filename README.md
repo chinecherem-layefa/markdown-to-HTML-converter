@@ -25,9 +25,10 @@
   - _State variables_: These compose the soul of this project. currentListType, paragraghBuffer and inCodeBlock.
   - _Block detection_: Regex patterns are used to determine the kind of block we're in.
   - _Inline parsing_: Here, Order is destiny. Images first, followed by links, then bold, italic and code. This is because of the way they are written in markdown. Order ensures we move from broader specifics to narrower specifics. Like ![]() must come before []() and \*_ before _
-  - _Error processing_: TypeError for invalid input and visual red border for empty submission in user interface. - _Indepth error processing:_ `if (typeof markdown !== "string") {
+  - _Error processing_: TypeError for invalid input and visual red border for empty submission in user interface.
+  - _Indepth error processing:_ `if (typeof markdown !== "string") {
 throw new TypeError("Input must be a string");
 }` ensures we are building multiple layers of security/validation due to library usage by external callers outside of controlled UI environment. Textarea in the UI environment already ensures we get a string all the time. So this is defense in depth.
   - _Security_: escapeHTML() sanitizes &<>"' in a single pass to prevent XSS.
-  - _Resource management and memory optimization_: After coming to the end of the paragraph, we clear the buffer by assigning it's length as 0 and that memory is reused again for the nest paragraph.
+  - _Resource management and memory optimization_: After coming to the end of the paragraph, we clear the buffer by assigning it's length as 0 and that memory is reused again for the next paragraph.
   - _Change strategy_: The modular functions allow for ease of refactoring.
